@@ -3,9 +3,13 @@ import argparse
 import subprocess
 import shutil
 
+from termcolor import colored
 from time import time 
 from datetime import datetime, timedelta
 from timeit import default_timer as timer
+
+COLORED_OUTPUT = True
+VERBOSE = False
 
 paths = {}
 tools = {}
@@ -23,7 +27,7 @@ compile = False
 def stage(tool, name, ext):
 
     if tool not in tools:
-        print('Unknown tool', tool)
+        error('Unknown tool', tool)
 
     toolpath = tools[tool].split('->')[0]
     outext = tools[tool].split('->')[1]
@@ -31,12 +35,16 @@ def stage(tool, name, ext):
     cmd = toolpath + ' ' + paths['src'] + '\\' + name + '.' + ext
 
     if compile:
-        print('\tExecuting ' + tool + ' with ' + name + '.' + ext)
+        if VERBOSE:
+            message('\tExecuting ' + tool + ' with ' + name + '.' + ext)
         subprocess.run(cmd)
 
     return (name, outext)
 
 def link(cfg):
+
+    start = timer()
+
     f = open(cfg)
 
     ps = f.readlines()
@@ -63,8 +71,6 @@ def link(cfg):
             name = nameext.split('.')[0]
             ext = nameext.split('.')[1]
 
-            print(str(nameext) + '>')
-
             lastmod = os.path.getmtime(paths['src'] + '\\' + nameext)
 
             if nameext in timestamps:
@@ -72,7 +78,6 @@ def link(cfg):
                 global compile
 
                 if str(lastmod) == timestamps[nameext]:
-                    print('\t' + nameext + ' is up to date, skip')
                     compile = False
                 else:
                     timestamps[nameext] = lastmod
@@ -82,10 +87,18 @@ def link(cfg):
                 timestamps[nameext] = lastmod
 
             if compile:
-                print('\tMaking ' + nameext)
+                message(str(i) + '>' + nameext)
+            else:
+                info(str(i) + '>' + nameext)
+                    
+            if VERBOSE:
+                if compile:
+                    message('\tMaking ' + nameext)
+                else:
+                    info('\t' + nameext + ' is up to date, skip')
 
             if ext not in toolchains:
-                print('Unknown extension', ext)
+                error('Unknown extension', ext)
                 exit()
 
             toolchain = toolchains[ext].split('->')
@@ -114,11 +127,13 @@ def link(cfg):
             image += bytes
 
             f.close()
-
-            print()
             
         else:
             image += "00\n" * 256
+
+    end = timer()
+
+    message('\nGenerated ' + outfile + ' in ' + str(timedelta(seconds=end-start)))
 
 def read_timestamps():
     f = open('timestamps')
@@ -193,9 +208,73 @@ def timestamp_cleanup():
 
     wfile.close()
 
+def init_project():
+    path = paths['root']
+
+    info('Initialising project at ' + path + '...')
+
+    f = open(path + '\\' + 'paths', 'w')
+
+    f.write('src=\n')
+    f.write('temp=\n')
+    f.write('output=')
+
+    f.close()
+
+    f = open(path + '\\' + 'timestamps', 'w')
+    f.close()
+
+    f = open(path + '\\' + 'toolchains', 'w')
+    f.close()
+
+    f = open(path + '\\' + 'tools', 'w')
+    f.close()
+
+    f = open(path + '\\' + 'default.cocomake', 'w')
+    f.close()
+
+    message('Success!')
+
 def move_temp_files():
     for p in temp_files:
         os.replace(paths['src'] + '\\' + p, paths['temp'] + '\\' + p)
+
+def to_hex_string(n1, n2):
+    return '{0:0{1}X}'.format(n1,4) + '-{0:0{1}X}:'.format(n2,4)
+
+def print_map():
+    mx = max(banks.keys())
+    message('\n' + outfile + ':')
+
+    for i in range(mx + 1):
+
+        s = to_hex_string(i*256, ((i+1)*256) - 1)
+
+        if i in banks.keys():
+            message(s + ' ' + banks[i])
+        else:
+            message(s + ' -')
+
+def print_info():
+    pass
+
+def info(text):
+    if COLORED_OUTPUT:
+        print(colored(text, 'blue')) # mb cyan
+    else:
+        print(text)
+
+def message(text):
+    if COLORED_OUTPUT:
+        print(colored(text, 'green'))
+    else:
+        print(text)
+
+def error(text):
+    if COLORED_OUTPUT:
+        print(colored('Error: ' + text, 'red'))
+    else:
+        print('Error: ' + text)
 
 if __name__ == '__main__':
 
@@ -205,16 +284,37 @@ if __name__ == '__main__':
     parser.add_argument('-r',dest='recomp',action='store_const',const=True,default=False, help="force recompile")
     parser.add_argument('-c',dest='cleanup',action='store_const',const=True,default=False, help="cleanup temp files")
     parser.add_argument('-i',dest='init',action='store_const',const=True,default=False, help="init project")
+    parser.add_argument('-v',dest='verbose',action='store_const',const=True,default=False, help="verbose output")
+    parser.add_argument('-m',dest='map',action='store_const',const=True,default=False, help="print memory map")
+    parser.add_argument('-bw',dest='bw',action='store_const',const=True,default=False, help="monocrome output")
+    parser.add_argument('-info',dest='info',action='store_const',const=True,default=False, help="show info")
     args = parser.parse_args()
 
+    COLORED_OUTPUT = not args.bw
+    VERBOSE = args.verbose
+
     paths['root'] = os.getcwd()
+
+    if args.info:
+        print_info()
+        exit()
+
+    if args.init:
+        init_project()
+        exit()
+
     read_paths()
 
-    if args.recomp:
-        timestamp_cleanup()
-
     if args.cleanup:
+        info('Removing temporary files...')
         temp_cleanup()
+        message('Success!')
+        exit()
+
+    if args.recomp:
+        message('Force recompile all files...')
+        print()
+        timestamp_cleanup()
 
     read_tools()
     read_toolchains()
@@ -227,6 +327,6 @@ if __name__ == '__main__':
 
     move_temp_files()
 
-    # -i -c w/o compile
-    # pretty output color = 0000-00FF: all_ff.img ...
+    if args.map:
+        print_map()
     
