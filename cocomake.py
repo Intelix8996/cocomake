@@ -1,3 +1,9 @@
+#
+#   Cocomake - versatile incremental build system
+#   Written by Nikolay Repin
+#   2022
+#
+
 import os
 import argparse
 import subprocess
@@ -10,6 +16,7 @@ from timeit import default_timer as timer
 
 COLORED_OUTPUT = True
 VERBOSE = False
+RECOMPILE = False
 
 paths = {}
 tools = {}
@@ -29,8 +36,14 @@ def stage(tool, name, ext):
     if tool not in tools:
         error('Unknown tool', tool)
 
-    toolpath = tools[tool].split('->')[0]
-    outext = tools[tool].split('->')[1]
+    tokens = tools[tool].split('->')
+
+    toolpath = tokens[0]
+    outext = tokens[1]
+    postfix = ''
+
+    if len(tokens) == 3:
+        postfix = tokens[2]
 
     cmd = toolpath + ' ' + paths['src'] + '\\' + name + '.' + ext
 
@@ -39,9 +52,13 @@ def stage(tool, name, ext):
             message('\tExecuting ' + tool + ' with ' + name + '.' + ext)
         subprocess.run(cmd)
 
-    return (name, outext)
+    return (name + postfix, outext)
 
 def link(cfg):
+
+    if RECOMPILE:
+        message('Force recompile all files...')
+        print()
 
     start = timer()
 
@@ -106,6 +123,9 @@ def link(cfg):
             for tool in toolchain:
                 if tool != '':
                     (name, ext) = stage(tool, name, ext)
+                    if compile and not os.path.isfile(paths['src'] + '\\' + name + '.' + ext):
+                        error('Something went wrong with ' + tool + ' and ' + name)
+                        exit()
                     if compile:
                         temp_files.append(name + '.' + ext)
                 else:
@@ -211,6 +231,20 @@ def timestamp_cleanup():
 def init_project():
     path = paths['root']
 
+    if os.path.isfile(path + '\\' + 'paths'):
+        print(colored('This action will override current configuration', 'red'))
+        print(colored('Continue? (y/n) ', 'red'), end='')
+
+        answer = input()
+
+        if answer == 'y':
+            pass
+        elif answer == 'n':
+            exit()
+        else:
+            error('Invalid answer ' + answer)
+            exit()
+
     info('Initialising project at ' + path + '...')
 
     f = open(path + '\\' + 'paths', 'w')
@@ -256,7 +290,12 @@ def print_map():
             message(s + ' -')
 
 def print_info():
-    pass
+    info('|' + '-'*55 + '|')
+    info('|' + ' '*55 + '|')
+    info('|' + ' '*5 + 'Cocomake - versatile incremental build system' + ' '*5 + '|')
+    info('|' + ' '*15 + 'Written by Nikolay Repin' + ' '*16 + '|')
+    info('|' + ' '*55 + '|')
+    info('|' + '-'*55 + '|')
 
 def info(text):
     if COLORED_OUTPUT:
@@ -278,16 +317,16 @@ def error(text):
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Cocomake')
-    parser.add_argument('config_file',type=str, help='[config_file].cocomake')
+    parser = argparse.ArgumentParser(description='Cocomake - versatile incremental build system')
+    parser.add_argument('config_file',type=str, nargs='?', default='', help='[config_file].cocomake')
 
     parser.add_argument('-r',dest='recomp',action='store_const',const=True,default=False, help="force recompile")
     parser.add_argument('-c',dest='cleanup',action='store_const',const=True,default=False, help="cleanup temp files")
-    parser.add_argument('-i',dest='init',action='store_const',const=True,default=False, help="init project")
+    parser.add_argument('-init',dest='init',action='store_const',const=True,default=False, help="init project")
     parser.add_argument('-v',dest='verbose',action='store_const',const=True,default=False, help="verbose output")
     parser.add_argument('-m',dest='map',action='store_const',const=True,default=False, help="print memory map")
     parser.add_argument('-bw',dest='bw',action='store_const',const=True,default=False, help="monocrome output")
-    parser.add_argument('-info',dest='info',action='store_const',const=True,default=False, help="show info")
+    parser.add_argument('-i','-info',dest='info',action='store_const',const=True,default=False, help="show info")
     args = parser.parse_args()
 
     COLORED_OUTPUT = not args.bw
@@ -312,15 +351,19 @@ if __name__ == '__main__':
         exit()
 
     if args.recomp:
-        message('Force recompile all files...')
-        print()
+        RECOMPILE = True
         timestamp_cleanup()
 
     read_tools()
     read_toolchains()
     read_timestamps()
 
-    link(args.config_file)
+    if args.config_file != '':
+        link(args.config_file)
+    else:
+        error('No config file!')
+        info('You should specify .cocomake file when calling cocomake')
+        exit()
 
     write_image()
     write_timestamps()
@@ -329,4 +372,6 @@ if __name__ == '__main__':
 
     if args.map:
         print_map()
+
+    # compile to exe
     
