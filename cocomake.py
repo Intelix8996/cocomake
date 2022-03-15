@@ -8,6 +8,7 @@ import os
 import argparse
 import subprocess
 import shutil
+import sys
 
 from termcolor import colored
 from time import time 
@@ -34,7 +35,8 @@ compile = False
 def stage(tool, name, ext):
 
     if tool not in tools:
-        error('Unknown tool', tool)
+        error('Unknown tool ' + tool)
+        exit()
 
     tokens = tools[tool].split('->')
 
@@ -65,6 +67,10 @@ def link(cfg):
     f = open(cfg)
 
     ps = f.readlines()
+
+    if len(ps) == 0:
+        error('Empty config file')
+        exit()
 
     global outfile
     outfile = ps[0].replace('\n', '')
@@ -106,7 +112,8 @@ def link(cfg):
             if compile:
                 message(str(i) + '>' + nameext)
             else:
-                info(str(i) + '>' + nameext)
+                if COLORED_OUTPUT or VERBOSE:
+                    info(str(i) + '>' + nameext)
                     
             if VERBOSE:
                 if compile:
@@ -232,8 +239,11 @@ def init_project():
     path = paths['root']
 
     if os.path.isfile(path + '\\' + 'paths'):
-        print(colored('This action will override current configuration', 'red'))
-        print(colored('Continue? (y/n) ', 'red'), end='')
+        warning('This action will override current configuration')
+        if COLORED_OUTPUT:
+            print(colored('Continue? (y/n) ', 'yellow'), end='')
+        else:
+            print('Continue? (y/n) ', end='')
 
         answer = input()
 
@@ -289,6 +299,47 @@ def print_map():
         else:
             message(s + ' -')
 
+def add_to_makefile(cfg, add):
+    empty = False
+    num = int(add[0])
+    add = add[1:]
+    
+    f = open(cfg)
+
+    readtext = f.read()
+
+    lastchar = '0'
+
+    if len(readtext) != 0:
+        lastchar = readtext[len(readtext)-1]
+    else:
+        empty = True
+
+    f.close()
+
+    f = open(cfg, 'a')
+
+    if lastchar != '\n' and not empty:
+        f.write('\n')
+
+    for s in add:
+        f.write(str(num) + ':' + s + '\n')
+        num += 1
+
+    f.close()
+
+def start_debug(file):
+
+    info('Debugging ' + file)
+
+    if 'debug' not in tools.keys():
+        error('No debug configuration')
+        exit()
+
+    path = tools['debug'] + ' ' + paths['src'] + '\\' + file
+
+    subprocess.run(path)
+
 def print_info():
     info('|' + '-'*55 + '|')
     info('|' + ' '*55 + '|')
@@ -296,6 +347,9 @@ def print_info():
     info('|' + ' '*15 + 'Written by Nikolay Repin' + ' '*16 + '|')
     info('|' + ' '*55 + '|')
     info('|' + '-'*55 + '|')
+
+def exit():
+    sys.exit()
 
 def info(text):
     if COLORED_OUTPUT:
@@ -315,6 +369,12 @@ def error(text):
     else:
         print('Error: ' + text)
 
+def warning(text):
+    if COLORED_OUTPUT:
+        print(colored("Warning: " + text, 'yellow'))
+    else:
+        print("Warning: " + text)
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Cocomake - versatile incremental build system')
@@ -323,6 +383,8 @@ if __name__ == '__main__':
     parser.add_argument('-r',dest='recomp',action='store_const',const=True,default=False, help="force recompile")
     parser.add_argument('-c',dest='cleanup',action='store_const',const=True,default=False, help="cleanup temp files")
     parser.add_argument('-init',dest='init',action='store_const',const=True,default=False, help="init project")
+    parser.add_argument('-a',dest='add', type=str, action='store', nargs='+', help="add files to config file")
+    parser.add_argument('-d',dest='debug', type=str, action='store',nargs='?', help="debug a file")
     parser.add_argument('-v',dest='verbose',action='store_const',const=True,default=False, help="verbose output")
     parser.add_argument('-m',dest='map',action='store_const',const=True,default=False, help="print memory map")
     parser.add_argument('-bw',dest='bw',action='store_const',const=True,default=False, help="monocrome output")
@@ -343,6 +405,12 @@ if __name__ == '__main__':
         exit()
 
     read_paths()
+    read_tools()
+    read_toolchains()
+
+    if args.debug:
+        start_debug(args.debug)
+        exit()
 
     if args.cleanup:
         info('Removing temporary files...')
@@ -353,13 +421,15 @@ if __name__ == '__main__':
     if args.recomp:
         RECOMPILE = True
         timestamp_cleanup()
-
-    read_tools()
-    read_toolchains()
+    
     read_timestamps()
 
     if args.config_file != '':
-        link(args.config_file)
+        if args.add != None:
+            add_to_makefile(args.config_file, args.add)
+            exit()
+        else:
+            link(args.config_file)
     else:
         error('No config file!')
         info('You should specify .cocomake file when calling cocomake')
@@ -374,4 +444,4 @@ if __name__ == '__main__':
         print_map()
 
     # compile to exe
-    
+    # path.join
