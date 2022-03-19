@@ -43,7 +43,7 @@ assembler=C:\path\to\assembler\assembler.exe->obj
 debug=C:\path\to\debugger\debugger.exe
 ```
 
-So, there we adder a linker that produces files with .img extension and assemblerhat produces files with .obj extension.
+So, there we adder a linker that produces files with .img extension and assembler that produces files with .obj extension.
 
 6. Define toolchains in `toolchains` file in format `[ext]=[tool1]->[tool2]->...->[tool]`.
 
@@ -96,7 +96,7 @@ For example, `cocomake default.cocomake`.
 + `-v` - verbose output. *Usage:* `cocomake -v [config]`
 + `-m` - print memory map afer making image.  *Usage:* `cocomake -m [config]`
 + `-bw` - switch output to black and white mode.  *Usage:* `cocomake -bw ...`
-+ `-init` - initialize project.  *Usage:* `cocomake -i`
++ `-init` - initialize project.  *Usage:* `cocomake -init`
 + `-i`, `-info` - print about window.  *Usage:* `cocomake -i`, `cocomake -info`
 
 You can also combine some arguments. Example: `cocomake -m -bw -v default.cocomake`
