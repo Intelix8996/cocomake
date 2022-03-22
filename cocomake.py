@@ -120,7 +120,7 @@ def link(cfg):
                     info('\t' + nameext + ' is up to date, skip')
 
             if ext not in toolchains:
-                error('Unknown extension', ext)
+                error(f'Unknown extension: {ext}')
                 sys.exit()
 
             toolchain = toolchains[ext].split('->')
