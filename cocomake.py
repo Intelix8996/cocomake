@@ -359,31 +359,19 @@ def print_info() -> NoReturn:
 
 
 def info(text: str) -> NoReturn:
-    if COLORED_OUTPUT:
-        print(colored(text, 'blue'))  # mb cyan
-    else:
-        print(text)
+    print(colored(text, 'blue') if COLORED_OUTPUT else text)  # maybe change it to cyan...
 
 
 def message(text: str) -> NoReturn:
-    if COLORED_OUTPUT:
-        print(colored(text, 'green'))
-    else:
-        print(text)
+    print(colored(text, 'green') if COLORED_OUTPUT else text)
 
 
 def error(text: str) -> NoReturn:
-    if COLORED_OUTPUT:
-        print(colored('Error: ' + text, 'red'))
-    else:
-        print('Error: ' + text)
+    print(colored("Error: " + text, 'red') if COLORED_OUTPUT else "Error: " + text)
 
 
 def warning(text: str) -> NoReturn:
-    if COLORED_OUTPUT:
-        print(colored("Warning: " + text, 'yellow'))
-    else:
-        print("Warning: " + text)
+    print(colored("Warning: " + text, 'yellow') if COLORED_OUTPUT else "Warning: " + text)
 
 
 if __name__ == '__main__':
