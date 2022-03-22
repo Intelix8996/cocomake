@@ -289,7 +289,7 @@ def move_temp_files() -> NoReturn:
         os.replace(paths['src'] + '\\' + p, paths['temp'] + '\\' + p)
 
 
-def to_hex_string(n1: int, n2: int) -> str:
+def to_hex_string(n1, n2) -> str:
     return '{0:0{1}X}'.format(n1, 4) + '-{0:0{1}X}:'.format(n2, 4)
 
 
