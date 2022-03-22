@@ -11,8 +11,7 @@ import shutil
 import sys
 
 from termcolor import colored
-from time import time 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from timeit import default_timer as timer
 
 COLORED_OUTPUT = True
@@ -32,8 +31,8 @@ temp_files = []
 
 compile_ = False
 
-def stage(tool, name, ext):
 
+def stage(tool, name, ext):
     if tool not in tools:
         error('Unknown tool ' + tool)
         sys.exit()
@@ -56,8 +55,8 @@ def stage(tool, name, ext):
 
     return (name + postfix, outext)
 
-def link(cfg):
 
+def link(cfg):
     if RECOMPILE:
         message('Force recompile all files...')
         print()
@@ -114,7 +113,7 @@ def link(cfg):
             else:
                 if COLORED_OUTPUT or VERBOSE:
                     info(str(i) + '>' + nameext)
-                    
+
             if VERBOSE:
                 if compile_:
                     message('\tMaking ' + nameext)
@@ -139,7 +138,7 @@ def link(cfg):
                     # for zero toolchain (.img)
                     if compile_:
                         shutil.copyfile(paths['src'] + '\\' + name + '.' + ext, paths['temp'] + '\\' + name + '.' + ext)
-                
+
             path = ''
 
             if compile_:
@@ -154,13 +153,14 @@ def link(cfg):
             image += _bytes
 
             f.close()
-            
+
         else:
             image += "00\n" * 256
 
     end = timer()
 
-    message('\nGenerated ' + outfile + ' in ' + str(timedelta(seconds=end-start)))
+    message('\nGenerated ' + outfile + ' in ' + str(timedelta(seconds=end - start)))
+
 
 def read_timestamps():
     f = open('timestamps')
@@ -173,6 +173,7 @@ def read_timestamps():
 
     f.close()
 
+
 def read_tools():
     f = open('tools')
 
@@ -184,8 +185,8 @@ def read_tools():
 
     f.close()
 
-def read_toolchains():
 
+def read_toolchains():
     f = open('toolchains')
 
     ps = f.readlines()
@@ -196,8 +197,8 @@ def read_toolchains():
 
     f.close()
 
-def read_paths():
 
+def read_paths():
     f = open('paths')
 
     ps = f.readlines()
@@ -208,12 +209,14 @@ def read_paths():
 
     f.close()
 
+
 def write_image():
     wfile = open(paths['output'] + '\\' + outfile, 'w')
 
     wfile.write(image)
 
     wfile.close()
+
 
 def write_timestamps():
     wfile = open('timestamps', 'w')
@@ -223,10 +226,12 @@ def write_timestamps():
 
     wfile.close()
 
+
 def temp_cleanup():
     for f in os.listdir(paths['temp']):
         os.remove(os.path.join(paths['temp'], f))
     timestamp_cleanup()
+
 
 def timestamp_cleanup():
     wfile = open('timestamps', 'w')
@@ -234,6 +239,7 @@ def timestamp_cleanup():
     wfile.write('')
 
     wfile.close()
+
 
 def init_project():
     path = paths['root']
@@ -279,12 +285,15 @@ def init_project():
 
     message('Success!')
 
+
 def move_temp_files():
     for p in temp_files:
         os.replace(paths['src'] + '\\' + p, paths['temp'] + '\\' + p)
 
+
 def to_hex_string(n1, n2):
-    return '{0:0{1}X}'.format(n1,4) + '-{0:0{1}X}:'.format(n2,4)
+    return '{0:0{1}X}'.format(n1, 4) + '-{0:0{1}X}:'.format(n2, 4)
+
 
 def print_map():
     mx = max(banks.keys())
@@ -292,18 +301,19 @@ def print_map():
 
     for i in range(mx + 1):
 
-        s = to_hex_string(i*256, ((i+1)*256) - 1)
+        s = to_hex_string(i * 256, ((i + 1) * 256) - 1)
 
         if i in banks.keys():
             message(s + ' ' + banks[i])
         else:
             message(s + ' -')
 
+
 def add_to_makefile(cfg, add):
     empty = False
     num = int(add[0])
     add = add[1:]
-    
+
     f = open(cfg)
 
     readtext = f.read()
@@ -311,7 +321,7 @@ def add_to_makefile(cfg, add):
     lastchar = '0'
 
     if len(readtext) != 0:
-        lastchar = readtext[len(readtext)-1]
+        lastchar = readtext[len(readtext) - 1]
     else:
         empty = True
 
@@ -328,8 +338,8 @@ def add_to_makefile(cfg, add):
 
     f.close()
 
-def start_debug(file):
 
+def start_debug(file):
     info('Debugging ' + file)
 
     if 'debug' not in tools.keys():
@@ -340,19 +350,22 @@ def start_debug(file):
 
     subprocess.run(path)
 
+
 def print_info():
-    info('|' + '-'*55 + '|')
-    info('|' + ' '*55 + '|')
-    info('|' + ' '*5 + 'Cocomake - versatile incremental build system' + ' '*5 + '|')
-    info('|' + ' '*15 + 'Written by Nikolay Repin' + ' '*16 + '|')
-    info('|' + ' '*55 + '|')
-    info('|' + '-'*55 + '|')
+    info('|' + '-' * 55 + '|')
+    info('|' + ' ' * 55 + '|')
+    info('|' + ' ' * 5 + 'Cocomake - versatile incremental build system' + ' ' * 5 + '|')
+    info('|' + ' ' * 15 + 'Written by Nikolay Repin' + ' ' * 16 + '|')
+    info('|' + ' ' * 55 + '|')
+    info('|' + '-' * 55 + '|')
+
 
 def info(text):
     if COLORED_OUTPUT:
-        print(colored(text, 'blue')) # mb cyan
+        print(colored(text, 'blue'))  # mb cyan
     else:
         print(text)
+
 
 def message(text):
     if COLORED_OUTPUT:
@@ -360,11 +373,13 @@ def message(text):
     else:
         print(text)
 
+
 def error(text):
     if COLORED_OUTPUT:
         print(colored('Error: ' + text, 'red'))
     else:
         print('Error: ' + text)
+
 
 def warning(text):
     if COLORED_OUTPUT:
@@ -372,20 +387,22 @@ def warning(text):
     else:
         print("Warning: " + text)
 
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Cocomake - versatile incremental build system')
-    parser.add_argument('config_file',type=str, nargs='?', default='', help='[config_file].cocomake')
+    parser.add_argument('config_file', type=str, nargs='?', default='', help='[config_file].cocomake')
 
-    parser.add_argument('-r',dest='recomp',action='store_const',const=True,default=False, help="force recompile")
-    parser.add_argument('-c',dest='cleanup',action='store_const',const=True,default=False, help="cleanup temp files")
-    parser.add_argument('-init',dest='init',action='store_const',const=True,default=False, help="init project")
-    parser.add_argument('-a',dest='add', type=str, action='store', nargs='+', help="add files to config file")
-    parser.add_argument('-d',dest='debug', type=str, action='store',nargs='?', help="debug a file")
-    parser.add_argument('-v',dest='verbose',action='store_const',const=True,default=False, help="verbose output")
-    parser.add_argument('-m',dest='map',action='store_const',const=True,default=False, help="print memory map")
-    parser.add_argument('-bw',dest='bw',action='store_const',const=True,default=False, help="monocrome output")
-    parser.add_argument('-i','-info',dest='info',action='store_const',const=True,default=False, help="show info")
+    parser.add_argument('-r', dest='recomp', action='store_const', const=True, default=False, help="force recompile")
+    parser.add_argument('-c', dest='cleanup', action='store_const', const=True, default=False,
+                        help="cleanup temp files")
+    parser.add_argument('-init', dest='init', action='store_const', const=True, default=False, help="init project")
+    parser.add_argument('-a', dest='add', type=str, action='store', nargs='+', help="add files to config file")
+    parser.add_argument('-d', dest='debug', type=str, action='store', nargs='?', help="debug a file")
+    parser.add_argument('-v', dest='verbose', action='store_const', const=True, default=False, help="verbose output")
+    parser.add_argument('-m', dest='map', action='store_const', const=True, default=False, help="print memory map")
+    parser.add_argument('-bw', dest='bw', action='store_const', const=True, default=False, help="monocrome output")
+    parser.add_argument('-i', '-info', dest='info', action='store_const', const=True, default=False, help="show info")
     args = parser.parse_args()
 
     COLORED_OUTPUT = not args.bw
@@ -418,11 +435,11 @@ if __name__ == '__main__':
     if args.recomp:
         RECOMPILE = True
         timestamp_cleanup()
-    
+
     read_timestamps()
 
     if args.config_file != '':
-        if args.add != None:
+        if args.add is not None:
             add_to_makefile(args.config_file, args.add)
             sys.exit()
         else:
