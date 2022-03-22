@@ -11,16 +11,15 @@ import shutil
 import sys
 
 from datetime import timedelta
-from timeit import default_timer as timer
-from typing import Dict, List, Tuple, NoReturn
 
 from termcolor import colored
+from timeit import default_timer as timer
 
 COLORED_OUTPUT = True
 VERBOSE = False
 RECOMPILE = False
 
-paths: Dict[str, str] = {}
+paths = {}
 tools = {}
 toolchains = {}
 timestamps = {}
@@ -31,10 +30,9 @@ image = ''
 
 temp_files = []
 
-compile_ = False
+needs_compiling = False
 
-
-def stage(tool: str, name: str, ext: str) -> Tuple[str, str]:
+def stage(tool, name, ext):
     if tool not in tools:
         error('Unknown tool ' + tool)
         sys.exit()
@@ -48,7 +46,7 @@ def stage(tool: str, name: str, ext: str) -> Tuple[str, str]:
 
     cmd = tool_path + ' ' + paths['src'] + '\\' + name + '.' + ext
 
-    if compile_:
+    if needs_compiling:
         if VERBOSE:
             message('\tExecuting ' + tool + ' with ' + name + '.' + ext)
         subprocess.run(cmd)
@@ -56,7 +54,7 @@ def stage(tool: str, name: str, ext: str) -> Tuple[str, str]:
     return name + postfix, out_ext
 
 
-def link(cfg: str) -> NoReturn:
+def link(cfg):
     if RECOMPILE:
         message('Force recompile all files...')
         print()
@@ -97,31 +95,31 @@ def link(cfg: str) -> NoReturn:
 
             if name_ext in timestamps:
 
-                global compile_
+                global needs_compiling
 
                 if str(lastmod) == timestamps[name_ext]:
-                    compile_ = False
+                    needs_compiling = False
                 else:
                     timestamps[name_ext] = lastmod
-                    compile_ = True
+                    needs_compiling = True
             else:
-                compile_ = True
+                needs_compiling = True
                 timestamps[name_ext] = lastmod
 
-            if compile_:
+            if needs_compiling:
                 message(str(i) + '>' + name_ext)
             else:
                 if COLORED_OUTPUT or VERBOSE:
                     info(str(i) + '>' + name_ext)
 
             if VERBOSE:
-                if compile_:
+                if needs_compiling:
                     message('\tMaking ' + name_ext)
                 else:
                     info('\t' + name_ext + ' is up to date, skip')
 
             if ext not in toolchains:
-                error(f'Unknown extension: {ext}')
+                error('Unknown extension: ' + ext)
                 sys.exit()
 
             toolchain = toolchains[ext].split('->')
@@ -129,26 +127,24 @@ def link(cfg: str) -> NoReturn:
             for tool in toolchain:
                 if tool != '':
                     (name, ext) = stage(tool, name, ext)
-                    if compile_ and not os.path.isfile(paths['src'] + '\\' + name + '.' + ext):
+                    if needs_compiling and not os.path.isfile(paths['src'] + '\\' + name + '.' + ext):
                         error('Something went wrong with ' + tool + ' and ' + name)
                         sys.exit()
-                    if compile_:
+                    if needs_compiling:
                         temp_files.append(name + '.' + ext)
                 else:
                     # for zero toolchain (.img)
-                    if compile_:
+                    if needs_compiling:
                         shutil.copyfile(paths['src'] + '\\' + name + '.' + ext, paths['temp'] + '\\' + name + '.' + ext)
 
-            if compile_:
+            if needs_compiling:
                 path = paths['src'] + '\\' + name + '.' + ext
             else:
                 path = paths['temp'] + '\\' + name + '.' + ext
 
             f = open(path)
 
-            _bytes = f.read()[9:]
-
-            image += _bytes
+            image += f.read()[9:]
 
             f.close()
 
@@ -160,7 +156,7 @@ def link(cfg: str) -> NoReturn:
     message('\nGenerated ' + outfile + ' in ' + str(timedelta(seconds=end - start)))
 
 
-def read_timestamps() -> NoReturn:
+def read_timestamps():
     f = open('timestamps')
 
     ps = f.readlines()
@@ -172,7 +168,7 @@ def read_timestamps() -> NoReturn:
     f.close()
 
 
-def read_tools() -> NoReturn:
+def read_tools():
     f = open('tools')
 
     ps = f.readlines()
@@ -184,7 +180,7 @@ def read_tools() -> NoReturn:
     f.close()
 
 
-def read_toolchains() -> NoReturn:
+def read_toolchains():
     f = open('toolchains')
 
     ps = f.readlines()
@@ -196,7 +192,7 @@ def read_toolchains() -> NoReturn:
     f.close()
 
 
-def read_paths() -> NoReturn:
+def read_paths():
     f = open('paths')
 
     ps = f.readlines()
@@ -208,7 +204,7 @@ def read_paths() -> NoReturn:
     f.close()
 
 
-def write_image() -> NoReturn:
+def write_image():
     w_file = open(paths['output'] + '\\' + outfile, 'w')
 
     w_file.write(image)
@@ -216,7 +212,7 @@ def write_image() -> NoReturn:
     w_file.close()
 
 
-def write_timestamps() -> NoReturn:
+def write_timestamps():
     w_file = open('timestamps', 'w')
 
     for key in timestamps.keys():
@@ -225,13 +221,13 @@ def write_timestamps() -> NoReturn:
     w_file.close()
 
 
-def temp_cleanup() -> NoReturn:
+def temp_cleanup():
     for f in os.listdir(paths['temp']):
         os.remove(os.path.join(paths['temp'], f))
     timestamp_cleanup()
 
 
-def timestamp_cleanup() -> NoReturn:
+def timestamp_cleanup():
     w_file = open('timestamps', 'w')
 
     w_file.write('')
@@ -239,7 +235,7 @@ def timestamp_cleanup() -> NoReturn:
     w_file.close()
 
 
-def init_project() -> NoReturn:
+def init_project():
     path = paths['root']
 
     if os.path.isfile(path + '\\' + 'paths'):
@@ -284,16 +280,16 @@ def init_project() -> NoReturn:
     message('Success!')
 
 
-def move_temp_files() -> NoReturn:
+def move_temp_files():
     for p in temp_files:
         os.replace(paths['src'] + '\\' + p, paths['temp'] + '\\' + p)
 
 
-def to_hex_string(n1, n2) -> str:
+def to_hex_string(n1, n2):
     return '{0:0{1}X}'.format(n1, 4) + '-{0:0{1}X}:'.format(n2, 4)
 
 
-def print_map() -> NoReturn:
+def print_map():
     mx = max(banks.keys())
     message('\n' + outfile + ':')
 
@@ -307,7 +303,7 @@ def print_map() -> NoReturn:
             message(s + ' -')
 
 
-def add_to_makefile(cfg: str, add) -> NoReturn:
+def add_to_makefile(cfg, add):
     empty = False
     num = int(add[0])
     add = add[1:]
@@ -337,7 +333,7 @@ def add_to_makefile(cfg: str, add) -> NoReturn:
     f.close()
 
 
-def start_debug(file: str) -> NoReturn:
+def start_debug(file):
     info('Debugging ' + file)
 
     if 'debug' not in tools.keys():
@@ -349,7 +345,7 @@ def start_debug(file: str) -> NoReturn:
     subprocess.run(path)
 
 
-def print_info() -> NoReturn:
+def print_info():
     info('|' + '-' * 55 + '|')
     info('|' + ' ' * 55 + '|')
     info('|' + ' ' * 5 + 'Cocomake - versatile incremental build system' + ' ' * 5 + '|')
@@ -358,24 +354,22 @@ def print_info() -> NoReturn:
     info('|' + '-' * 55 + '|')
 
 
-def info(text: str) -> NoReturn:
+def info(text: str):
     print(colored(text, 'blue') if COLORED_OUTPUT else text)  # maybe change it to cyan...
 
 
-def message(text: str) -> NoReturn:
+def message(text: str):
     print(colored(text, 'green') if COLORED_OUTPUT else text)
 
 
-def error(text: str) -> NoReturn:
+def error(text: str):
     print(colored("Error: " + text, 'red') if COLORED_OUTPUT else "Error: " + text)
 
 
-def warning(text: str) -> NoReturn:
+def warning(text: str):
     print(colored("Warning: " + text, 'yellow') if COLORED_OUTPUT else "Warning: " + text)
 
-
-if __name__ == '__main__':
-
+def main():
     parser = argparse.ArgumentParser(description='Cocomake - versatile incremental build system')
     parser.add_argument('config_file', type=str, nargs='?', default='', help='[config_file].cocomake')
 
@@ -390,6 +384,8 @@ if __name__ == '__main__':
     parser.add_argument('-bw', dest='bw', action='store_const', const=True, default=False, help="monochrome output")
     parser.add_argument('-i', '-info', dest='info', action='store_const', const=True, default=False, help="show info")
     args = parser.parse_args()
+
+    global COLORED_OUTPUT, VERBOSE, RECOMPILE
 
     COLORED_OUTPUT = not args.bw
     VERBOSE = args.verbose
@@ -445,3 +441,7 @@ if __name__ == '__main__':
 
     # compile to exe
     # path.join
+
+
+if __name__ == '__main__':
+    main()
