@@ -10,9 +10,10 @@ import subprocess
 import shutil
 import sys
 
-from termcolor import colored
 from datetime import timedelta
 from timeit import default_timer as timer
+
+from termcolor import colored
 
 COLORED_OUTPUT = True
 VERBOSE = False
@@ -39,21 +40,19 @@ def stage(tool, name, ext):
 
     tokens = tools[tool].split('->')
 
-    toolpath = tokens[0]
-    outext = tokens[1]
-    postfix = ''
+    if len(tokens) == 2:
+        tokens.append('')
 
-    if len(tokens) == 3:
-        postfix = tokens[2]
+    tool_path, out_ext, postfix = tokens
 
-    cmd = toolpath + ' ' + paths['src'] + '\\' + name + '.' + ext
+    cmd = tool_path + ' ' + paths['src'] + '\\' + name + '.' + ext
 
     if compile_:
         if VERBOSE:
             message('\tExecuting ' + tool + ' with ' + name + '.' + ext)
         subprocess.run(cmd)
 
-    return (name + postfix, outext)
+    return name + postfix, out_ext
 
 
 def link(cfg):
