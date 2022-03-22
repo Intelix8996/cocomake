@@ -30,13 +30,13 @@ image = ''
 
 temp_files = []
 
-compile = False
+compile_ = False
 
 def stage(tool, name, ext):
 
     if tool not in tools:
         error('Unknown tool ' + tool)
-        exit()
+        sys.exit()
 
     tokens = tools[tool].split('->')
 
@@ -49,7 +49,7 @@ def stage(tool, name, ext):
 
     cmd = toolpath + ' ' + paths['src'] + '\\' + name + '.' + ext
 
-    if compile:
+    if compile_:
         if VERBOSE:
             message('\tExecuting ' + tool + ' with ' + name + '.' + ext)
         subprocess.run(cmd)
@@ -70,7 +70,7 @@ def link(cfg):
 
     if len(ps) == 0:
         error('Empty config file')
-        exit()
+        sys.exit()
 
     global outfile
     outfile = ps[0].replace('\n', '')
@@ -98,60 +98,60 @@ def link(cfg):
 
             if nameext in timestamps:
 
-                global compile
+                global compile_
 
                 if str(lastmod) == timestamps[nameext]:
-                    compile = False
+                    compile_ = False
                 else:
                     timestamps[nameext] = lastmod
-                    compile = True
+                    compile_ = True
             else:
-                compile = True
+                compile_ = True
                 timestamps[nameext] = lastmod
 
-            if compile:
+            if compile_:
                 message(str(i) + '>' + nameext)
             else:
                 if COLORED_OUTPUT or VERBOSE:
                     info(str(i) + '>' + nameext)
                     
             if VERBOSE:
-                if compile:
+                if compile_:
                     message('\tMaking ' + nameext)
                 else:
                     info('\t' + nameext + ' is up to date, skip')
 
             if ext not in toolchains:
                 error('Unknown extension', ext)
-                exit()
+                sys.exit()
 
             toolchain = toolchains[ext].split('->')
 
             for tool in toolchain:
                 if tool != '':
                     (name, ext) = stage(tool, name, ext)
-                    if compile and not os.path.isfile(paths['src'] + '\\' + name + '.' + ext):
+                    if compile_ and not os.path.isfile(paths['src'] + '\\' + name + '.' + ext):
                         error('Something went wrong with ' + tool + ' and ' + name)
-                        exit()
-                    if compile:
+                        sys.exit()
+                    if compile_:
                         temp_files.append(name + '.' + ext)
                 else:
                     # for zero toolchain (.img)
-                    if compile:
+                    if compile_:
                         shutil.copyfile(paths['src'] + '\\' + name + '.' + ext, paths['temp'] + '\\' + name + '.' + ext)
                 
             path = ''
 
-            if compile:
+            if compile_:
                 path = paths['src'] + '\\' + name + '.' + ext
             else:
                 path = paths['temp'] + '\\' + name + '.' + ext
 
             f = open(path)
 
-            bytes = f.read()[9:]
+            _bytes = f.read()[9:]
 
-            image += bytes
+            image += _bytes
 
             f.close()
             
@@ -250,10 +250,10 @@ def init_project():
         if answer == 'y':
             pass
         elif answer == 'n':
-            exit()
+            sys.exit()
         else:
             error('Invalid answer ' + answer)
-            exit()
+            sys.exit()
 
     info('Initialising project at ' + path + '...')
 
@@ -334,7 +334,7 @@ def start_debug(file):
 
     if 'debug' not in tools.keys():
         error('No debug configuration')
-        exit()
+        sys.exit()
 
     path = tools['debug'] + ' ' + paths['src'] + '\\' + file
 
@@ -347,9 +347,6 @@ def print_info():
     info('|' + ' '*15 + 'Written by Nikolay Repin' + ' '*16 + '|')
     info('|' + ' '*55 + '|')
     info('|' + '-'*55 + '|')
-
-def exit():
-    sys.exit()
 
 def info(text):
     if COLORED_OUTPUT:
@@ -398,11 +395,11 @@ if __name__ == '__main__':
 
     if args.info:
         print_info()
-        exit()
+        sys.exit()
 
     if args.init:
         init_project()
-        exit()
+        sys.exit()
 
     read_paths()
     read_tools()
@@ -410,13 +407,13 @@ if __name__ == '__main__':
 
     if args.debug:
         start_debug(args.debug)
-        exit()
+        sys.exit()
 
     if args.cleanup:
         info('Removing temporary files...')
         temp_cleanup()
         message('Success!')
-        exit()
+        sys.exit()
 
     if args.recomp:
         RECOMPILE = True
@@ -427,13 +424,13 @@ if __name__ == '__main__':
     if args.config_file != '':
         if args.add != None:
             add_to_makefile(args.config_file, args.add)
-            exit()
+            sys.exit()
         else:
             link(args.config_file)
     else:
         error('No config file!')
         info('You should specify .cocomake file when calling cocomake')
-        exit()
+        sys.exit()
 
     write_image()
     write_timestamps()
