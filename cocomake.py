@@ -12,6 +12,7 @@ import sys
 
 from datetime import timedelta
 from timeit import default_timer as timer
+from typing import Dict, List, Tuple, NoReturn
 
 from termcolor import colored
 
@@ -19,7 +20,7 @@ COLORED_OUTPUT = True
 VERBOSE = False
 RECOMPILE = False
 
-paths = {}
+paths: Dict[str, str] = {}
 tools = {}
 toolchains = {}
 timestamps = {}
@@ -33,7 +34,7 @@ temp_files = []
 compile_ = False
 
 
-def stage(tool, name, ext):
+def stage(tool: str, name: str, ext: str) -> Tuple[str, str]:
     if tool not in tools:
         error('Unknown tool ' + tool)
         sys.exit()
@@ -55,7 +56,7 @@ def stage(tool, name, ext):
     return name + postfix, out_ext
 
 
-def link(cfg):
+def link(cfg: str) -> NoReturn:
     if RECOMPILE:
         message('Force recompile all files...')
         print()
@@ -88,36 +89,36 @@ def link(cfg):
 
         if i in banks.keys():
 
-            nameext = banks[i]
-            name = nameext.split('.')[0]
-            ext = nameext.split('.')[1]
+            name_ext = banks[i]
+            name = name_ext.split('.')[0]
+            ext = name_ext.split('.')[1]
 
-            lastmod = os.path.getmtime(paths['src'] + '\\' + nameext)
+            lastmod = os.path.getmtime(paths['src'] + '\\' + name_ext)
 
-            if nameext in timestamps:
+            if name_ext in timestamps:
 
                 global compile_
 
-                if str(lastmod) == timestamps[nameext]:
+                if str(lastmod) == timestamps[name_ext]:
                     compile_ = False
                 else:
-                    timestamps[nameext] = lastmod
+                    timestamps[name_ext] = lastmod
                     compile_ = True
             else:
                 compile_ = True
-                timestamps[nameext] = lastmod
+                timestamps[name_ext] = lastmod
 
             if compile_:
-                message(str(i) + '>' + nameext)
+                message(str(i) + '>' + name_ext)
             else:
                 if COLORED_OUTPUT or VERBOSE:
-                    info(str(i) + '>' + nameext)
+                    info(str(i) + '>' + name_ext)
 
             if VERBOSE:
                 if compile_:
-                    message('\tMaking ' + nameext)
+                    message('\tMaking ' + name_ext)
                 else:
-                    info('\t' + nameext + ' is up to date, skip')
+                    info('\t' + name_ext + ' is up to date, skip')
 
             if ext not in toolchains:
                 error(f'Unknown extension: {ext}')
@@ -137,8 +138,6 @@ def link(cfg):
                     # for zero toolchain (.img)
                     if compile_:
                         shutil.copyfile(paths['src'] + '\\' + name + '.' + ext, paths['temp'] + '\\' + name + '.' + ext)
-
-            path = ''
 
             if compile_:
                 path = paths['src'] + '\\' + name + '.' + ext
@@ -161,7 +160,7 @@ def link(cfg):
     message('\nGenerated ' + outfile + ' in ' + str(timedelta(seconds=end - start)))
 
 
-def read_timestamps():
+def read_timestamps() -> NoReturn:
     f = open('timestamps')
 
     ps = f.readlines()
@@ -173,7 +172,7 @@ def read_timestamps():
     f.close()
 
 
-def read_tools():
+def read_tools() -> NoReturn:
     f = open('tools')
 
     ps = f.readlines()
@@ -185,7 +184,7 @@ def read_tools():
     f.close()
 
 
-def read_toolchains():
+def read_toolchains() -> NoReturn:
     f = open('toolchains')
 
     ps = f.readlines()
@@ -197,7 +196,7 @@ def read_toolchains():
     f.close()
 
 
-def read_paths():
+def read_paths() -> NoReturn:
     f = open('paths')
 
     ps = f.readlines()
@@ -209,38 +208,38 @@ def read_paths():
     f.close()
 
 
-def write_image():
-    wfile = open(paths['output'] + '\\' + outfile, 'w')
+def write_image() -> NoReturn:
+    w_file = open(paths['output'] + '\\' + outfile, 'w')
 
-    wfile.write(image)
+    w_file.write(image)
 
-    wfile.close()
+    w_file.close()
 
 
-def write_timestamps():
-    wfile = open('timestamps', 'w')
+def write_timestamps() -> NoReturn:
+    w_file = open('timestamps', 'w')
 
     for key in timestamps.keys():
-        wfile.write(str(key) + '=' + str(timestamps[key]) + '\n')
+        w_file.write(str(key) + '=' + str(timestamps[key]) + '\n')
 
-    wfile.close()
+    w_file.close()
 
 
-def temp_cleanup():
+def temp_cleanup() -> NoReturn:
     for f in os.listdir(paths['temp']):
         os.remove(os.path.join(paths['temp'], f))
     timestamp_cleanup()
 
 
-def timestamp_cleanup():
-    wfile = open('timestamps', 'w')
+def timestamp_cleanup() -> NoReturn:
+    w_file = open('timestamps', 'w')
 
-    wfile.write('')
+    w_file.write('')
 
-    wfile.close()
+    w_file.close()
 
 
-def init_project():
+def init_project() -> NoReturn:
     path = paths['root']
 
     if os.path.isfile(path + '\\' + 'paths'):
@@ -285,16 +284,16 @@ def init_project():
     message('Success!')
 
 
-def move_temp_files():
+def move_temp_files() -> NoReturn:
     for p in temp_files:
         os.replace(paths['src'] + '\\' + p, paths['temp'] + '\\' + p)
 
 
-def to_hex_string(n1, n2):
+def to_hex_string(n1: int, n2: int) -> str:
     return '{0:0{1}X}'.format(n1, 4) + '-{0:0{1}X}:'.format(n2, 4)
 
 
-def print_map():
+def print_map() -> NoReturn:
     mx = max(banks.keys())
     message('\n' + outfile + ':')
 
@@ -308,19 +307,19 @@ def print_map():
             message(s + ' -')
 
 
-def add_to_makefile(cfg, add):
+def add_to_makefile(cfg: str, add) -> NoReturn:
     empty = False
     num = int(add[0])
     add = add[1:]
 
     f = open(cfg)
 
-    readtext = f.read()
+    read_text = f.read()
 
-    lastchar = '0'
+    last_char = '0'
 
-    if len(readtext) != 0:
-        lastchar = readtext[len(readtext) - 1]
+    if len(read_text) != 0:
+        last_char = read_text[len(read_text) - 1]
     else:
         empty = True
 
@@ -328,7 +327,7 @@ def add_to_makefile(cfg, add):
 
     f = open(cfg, 'a')
 
-    if lastchar != '\n' and not empty:
+    if last_char != '\n' and not empty:
         f.write('\n')
 
     for s in add:
@@ -338,7 +337,7 @@ def add_to_makefile(cfg, add):
     f.close()
 
 
-def start_debug(file):
+def start_debug(file: str) -> NoReturn:
     info('Debugging ' + file)
 
     if 'debug' not in tools.keys():
@@ -350,7 +349,7 @@ def start_debug(file):
     subprocess.run(path)
 
 
-def print_info():
+def print_info() -> NoReturn:
     info('|' + '-' * 55 + '|')
     info('|' + ' ' * 55 + '|')
     info('|' + ' ' * 5 + 'Cocomake - versatile incremental build system' + ' ' * 5 + '|')
@@ -359,28 +358,28 @@ def print_info():
     info('|' + '-' * 55 + '|')
 
 
-def info(text):
+def info(text: str) -> NoReturn:
     if COLORED_OUTPUT:
         print(colored(text, 'blue'))  # mb cyan
     else:
         print(text)
 
 
-def message(text):
+def message(text: str) -> NoReturn:
     if COLORED_OUTPUT:
         print(colored(text, 'green'))
     else:
         print(text)
 
 
-def error(text):
+def error(text: str) -> NoReturn:
     if COLORED_OUTPUT:
         print(colored('Error: ' + text, 'red'))
     else:
         print('Error: ' + text)
 
 
-def warning(text):
+def warning(text: str) -> NoReturn:
     if COLORED_OUTPUT:
         print(colored("Warning: " + text, 'yellow'))
     else:
@@ -400,7 +399,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', dest='debug', type=str, action='store', nargs='?', help="debug a file")
     parser.add_argument('-v', dest='verbose', action='store_const', const=True, default=False, help="verbose output")
     parser.add_argument('-m', dest='map', action='store_const', const=True, default=False, help="print memory map")
-    parser.add_argument('-bw', dest='bw', action='store_const', const=True, default=False, help="monocrome output")
+    parser.add_argument('-bw', dest='bw', action='store_const', const=True, default=False, help="monochrome output")
     parser.add_argument('-i', '-info', dest='info', action='store_const', const=True, default=False, help="show info")
     args = parser.parse_args()
 
