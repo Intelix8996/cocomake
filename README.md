@@ -19,7 +19,7 @@ Additionally you can add cocomake to `PATH`
 
 1. Get cocomake.
 2. Create a folder for your project.
-3. From this folder call `cocmake -init` to initialize your project.
+3. From this folder call `cocomake -init` to initialize your project.
 
 > If your terminal can't display color you will get garbage in the output. To prevent this use `-bw` flag, it will switch output to black&white mode.
 
