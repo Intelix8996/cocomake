@@ -1,6 +1,8 @@
 # Cocomake
 #### Versatile incremental build system
 
+> [!WARNING]
+> This project is **deprecated**. Instead, check out [cdm-devkit](https://github.com/cdm-processors/cdm-devkit).
 
 ---
 
